@@ -8,7 +8,7 @@ data = collections.namedtuple('data', ['filepaths', 'dates_correct', 'date_delta
 
 def reader(filepathslist):
     """This function takes in a list of filepaths that each contain a 2d array of data, effectively taking
-    in a cube of data. It splits and stores this data in a named tuple which is returned. This can then be used
+    in a cuboid of data. It splits and stores this data in a named tuple which is returned. This can then be used
     to extract key pieces of information."""
     filepaths  = []
     dates_correct , date_deltas = [], []
