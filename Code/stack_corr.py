@@ -37,4 +37,5 @@ if __name__ == "__main__":
     d=rcd.reader(myfiles)
     a=stack_corr(d, 0.1)
     rwr.produce_output_netcdf(d.xvalues, d.yvalues, a, 'Percentage', 'signalspread.nc')
+    rwr.flip_if_necessary('signalspread.nc')
     rwr.produce_output_plot('signalspread.nc', 'Signal Spread', 'signalspread.png', 'Percentage of coherence (out of 288 images)' )
