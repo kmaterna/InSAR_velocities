@@ -21,7 +21,7 @@ def reader(filepathslist):
         date_new = date_new.replace(date_new[8:15], str(int(date_new[8:15]) + 1))
         dates_correct.append(date_new)
         delta = abs(datetime.strptime(dates_correct[i][0:7], '%Y%j') - datetime.strptime(dates_correct[i][8:15], '%Y%j'))
-        date_deltas.append(delta.days)
+        date_deltas.append(delta.days/365.24)
         xdata, ydata, zdata = rwr.read_grd_xyz(filepathslist[i])
         xvalues=xdata
         yvalues=ydata
