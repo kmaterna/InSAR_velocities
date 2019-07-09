@@ -3,9 +3,12 @@ import numpy as np
 import glob
 import netcdf_read_write as rwr
 import readmytupledata as rmd
+import scipy.io.netcdf as netcdf
+import matplotlib.pyplot as plt
+
 
 def velocity_simple_stack(filepathslist, wavelength, manual_exclude):
-    """This function takes in a tuple that contains an array of phases and times. It
+    """This function takes in a list of files that contain arrays of phases and times. It
     will compute the velocity of each pixel using the given wavelength of the satellite.
     Finally, it will return a 2D array of velocities, ready to be plotted. For the manual exclude
     argument, enter either 0 (no images excluded), 1 (15 images excluded), or 2 (40 images excluded)."""
@@ -37,7 +40,7 @@ def velocity_simple_stack(filepathslist, wavelength, manual_exclude):
             times.append(np.nan)
         f+=1
         if f == len(mytuple.zvalues):
-            velocities[i,j] = (wavelength/(2*(np.pi)))*((np.sum(phases))/(np.sum(times)))
+            velocities[i,j] = (wavelength/(4*(np.pi)))*((np.sum(phases))/(np.sum(times)))
             phases, times = [], []
             c+=1
             print('Done with ' + str(c) + ' out of ' + str(len(mytuple.xvalues)*len(mytuple.yvalues)) + ' pixels')
@@ -48,11 +51,11 @@ def velocity_simple_stack(filepathslist, wavelength, manual_exclude):
                 i+=1
                 if i == len(mytuple.yvalues):
                     i=0
-    return velocities
+    return velocities, mytuple.xvalues, mytuple.yvalues
 
 if __name__ == "__main__":
     myfiles = glob.glob("intf_all_remote/???????_???????/unwrap_ref.grd")
-    velocities = velocity_simple_stack(myfiles, 56, 1)
-    rwr.produce_output_netcdf(d.xvalues, d.yvalues, velocities, 'mm/yr', 'velo_prof_inclusive.grd')
-    rwr.flip_if_necessary('velo_prof_inclusive.grd')
-    rwr.produce_output_plot('velo_prof_inclusive.grd', 'Velocity Profile Inclusive', 'velo_prof_inclusive.png', 'velocity (mm/yr)')
+    velocities, x, y = velocity_simple_stack(myfiles, 56, 1)
+    rwr.produce_output_netcdf(x, y, velocities, 'mm/yr', 'velo_prof_reasonable.grd')
+    rwr.flip_if_necessary('velo_prof_reasonable.grd')
+    rwr.produce_output_plot('velo_prof_reasonable.grd', 'Velocity Profile Reasonable (15 images removed)', 'velo_prof_reasonable.png', 'velocity (mm/yr)')

@@ -1,13 +1,13 @@
 # Netcdf reading and writing functions
 # Bring a netcdf3 file into python!
 
-import numpy as np 
+import numpy as np
 import scipy.io.netcdf as netcdf
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
 import subprocess
 
 
-# --------------- READING ------------------- # 
+# --------------- READING ------------------- #
 
 def read_grd(filename):
 	data0 = netcdf.netcdf_file(filename,'r').variables['z'][::-1];
@@ -18,7 +18,7 @@ def read_grd_xy(filename):
 	ydata0 = netcdf.netcdf_file(filename,'r').variables['y'][::-1];
 	xdata=xdata0.copy();
 	ydata=ydata0.copy();
-	return [xdata, ydata]; 
+	return [xdata, ydata];
 
 def read_grd_xyz(filename):
 	xdata0 = netcdf.netcdf_file(filename,'r').variables['x'][::-1];
@@ -27,7 +27,7 @@ def read_grd_xyz(filename):
 	xdata=xdata0.copy();
 	ydata=ydata0.copy();
 	zdata=zdata0.copy();
-	return [xdata, ydata, zdata]; 
+	return [xdata, ydata, zdata];
 
 def read_grd_lonlatz(filename):
 	xdata0 = netcdf.netcdf_file(filename,'r').variables['lon'][::-1];
@@ -36,7 +36,7 @@ def read_grd_lonlatz(filename):
 	xdata=xdata0.copy();
 	ydata=ydata0.copy();
 	zdata=zdata0.copy();
-	return [xdata, ydata, zdata]; 
+	return [xdata, ydata, zdata];
 
 def read_grd_variables(filename, var1, var2, var3):
 	xdata0= netcdf.netcdf_file(filename,'r').variables[var1][::-1];
@@ -50,21 +50,21 @@ def read_grd_variables(filename, var1, var2, var3):
 def read_netcdf4_xy(filename):
 	netcdf4file=filename;
 	netcdf3file=filename+'nc3';
-	subprocess.call('nccopy -k classic '+netcdf4file+' '+netcdf3file,shell=True); 
+	subprocess.call('nccopy -k classic '+netcdf4file+' '+netcdf3file,shell=True);
 	[xdata, ydata] = read_grd_xy(netcdf3file);
 	return [xdata, ydata];
 
 def read_netcdf4(filename):
 	netcdf4file=filename;
 	netcdf3file=filename+'nc3';
-	subprocess.call('nccopy -k classic '+netcdf4file+' '+netcdf3file,shell=True); 
+	subprocess.call('nccopy -k classic '+netcdf4file+' '+netcdf3file,shell=True);
 	data = read_grd(netcdf3file);
 	return data;
 
 def read_netcdf4_xyz(filename):
 	netcdf4file=filename;
 	netcdf3file=filename+'nc3';
-	subprocess.call('nccopy -k classic '+netcdf4file+' '+netcdf3file,shell=True); 
+	subprocess.call('nccopy -k classic '+netcdf4file+' '+netcdf3file,shell=True);
 	zdata = read_grd(netcdf3file);
 	[xdata, ydata] = read_grd_xy(netcdf3file);
 	return [xdata, ydata, zdata];
@@ -72,33 +72,33 @@ def read_netcdf4_xyz(filename):
 def read_netcdf4_variables(filename, var1, var2, var3):
 	netcdf4file=filename;
 	netcdf3file=filename+'nc3';
-	subprocess.call('nccopy -k classic '+netcdf4file+' '+netcdf3file,shell=True); 
+	subprocess.call('nccopy -k classic '+netcdf4file+' '+netcdf3file,shell=True);
 	[xdata, ydata, zdata] = read_grd_variables(filename, var1, var2, var3);
 	return [xdata, ydata, zdata];
 
 
 def read_any_grd_xyz(filename):
-	# Switch between netcdf4 and netcdf3 automatically. 
+	# Switch between netcdf4 and netcdf3 automatically.
 	try:
 		[xdata, ydata, zdata] = read_grd_xyz(filename);
-	except TypeError: 
+	except TypeError:
 		[xdata, ydata, zdata] = read_netcdf4_xyz(filename);
 	return [xdata, ydata, zdata];
 
 
 def read_any_grd_variables(filename, var1, var2, var3):
-	# Switch between netcdf4 and netcdf3 automatically. 
+	# Switch between netcdf4 and netcdf3 automatically.
 	try:
 		[xdata, ydata, zdata] = read_grd_variables(filename, var1, var2, var3);
-	except TypeError: 
+	except TypeError:
 		[xdata, ydata, zdata] = read_netcdf4_variables(filename, var1, var2, var3);
 	return [xdata, ydata, zdata];
 
 
-# --------------- WRITING ------------------- # 
+# --------------- WRITING ------------------- #
 
 def produce_output_netcdf(xdata, ydata, zdata, zunits, netcdfname):
-	# # Write the netcdf velocity grid file.  
+	# # Write the netcdf velocity grid file.
 	f=netcdf.netcdf_file(netcdfname,'w');
 	f.history = 'Created for a test';
 	f.createDimension('x',len(xdata));
@@ -127,8 +127,8 @@ def flip_if_necessary(filename):
 		print("flipping the x-axis");
 		[xdata,ydata] = read_grd_xy(filename);
 		data = read_grd(filename);
-		# This is the key! Flip the x-axis when necessary.  
-		#xdata=np.flip(xdata,0);  # This is sometimes necessary and sometimes not!  Not sure why. 
+		# This is the key! Flip the x-axis when necessary.
+		#xdata=np.flip(xdata,0);  # This is sometimes necessary and sometimes not!  Not sure why.
 		produce_output_netcdf(xdata, ydata, data, 'mm/yr',filename);
 		xinc = subprocess.check_output('gmt grdinfo -M -C '+filename+' | awk \'{print $8}\'',shell=True);  # the x-increment
 		xinc = float(xinc.split()[0]);
@@ -137,8 +137,8 @@ def flip_if_necessary(filename):
 		print("flipping the y-axis");
 		[xdata,ydata] = read_grd_xy(filename);
 		data = read_grd(filename);
-		# Flip the y-axis when necessary.  
-		# ydata=np.flip(ydata,0);  
+		# Flip the y-axis when necessary.
+		# ydata=np.flip(ydata,0);
 		produce_output_netcdf(xdata, ydata, data, 'mm/yr',filename);
 		yinc = subprocess.check_output('gmt grdinfo -M -C '+filename+' | awk \'{print $9}\'',shell=True);  # the x-increment
 		yinc = float(yinc.split()[0]);
