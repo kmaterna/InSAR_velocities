@@ -1,5 +1,14 @@
+#!/usr/bin/python
 # Useful utility functions
 # For making network plots
+
+import numpy as np
+import datetime as dt
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import netcdf_read_write as rwr
+import scipy.io.netcdf as netcdf
+
 
 def read_baseline_table(baselinefilename):
 	# Ex file: baseline_table.dat
@@ -7,7 +16,7 @@ def read_baseline_table(baselinefilename):
     stems = baselineFile[:,0].astype(str);
     times = baselineFile[:,1].astype(float);
     missiondays = baselineFile[:,2].astype(str);
-    baselines = baselineFile[:,4].astype(float);    
+    baselines = baselineFile[:,4].astype(float);
     return [stems, times, baselines, missiondays];
 
 
@@ -16,6 +25,22 @@ def read_intf_table(tablefilename):
     tablefile = np.genfromtxt(tablefilename,dtype=str);
     intf_all = tablefile[:].astype(str);
     return intf_all;
+
+def remove_manual_excludes(intf_all, excludefilename, no_of_images):
+    f = open(excludefilename, 'r')
+    raw, content = f.readlines()[0:no_of_images], []
+    for i in range(len(raw)):
+        content.append(raw[i].strip('\n'))
+    for i in range(len(content)):
+        content[i] = content[i].replace(content[i][0:7], str(int(content[i][0:7]) + 1))
+        content[i] = content[i].replace(content[i][8:15], str(int(content[i][8:15]) + 1))
+        date1, date2 = dt.datetime.strptime(content[i][0:7], '%Y%j').date(), dt.datetime.strptime(content[i][8:15], '%Y%j').date()
+        content[i] = 'S1A' + date1.strftime('%Y%m%d') + '_ALL_F1:S1A' + date2.strftime('%Y%m%d') + '_ALL_F1'
+    included_intf = []
+    for i in range(len(intf_all)):
+        if intf_all[i] not in content:
+            included_intf.append(intf_all[i])
+    return included_intf
 
 
 def make_network_plot(intf_pairs, stems, tbaseline, xbaseline, plotname):
@@ -39,12 +64,12 @@ def make_network_plot(intf_pairs, stems, tbaseline, xbaseline, plotname):
 
 
     # # If there's a format like "2017089:2018101"....
-    # if len(intf_pairs[0])==15: 
+    # if len(intf_pairs[0])==15:
     #     dtarray=[]; im1_dt=[]; im2_dt=[];
     #     for i in range(len(times)):
     #         dtarray.append(dt.datetime.strptime(str(times[i])[0:7],'%Y%j'));
 
-    #     # Make the list of datetimes for the images. 
+    #     # Make the list of datetimes for the images.
     #     for i in range(len(intf_pairs)):
     #         scene1=intf_pairs[i][0:7];
     #         scene2=intf_pairs[i][8:15];
@@ -71,8 +96,18 @@ def make_network_plot(intf_pairs, stems, tbaseline, xbaseline, plotname):
     plt.xlabel("Date");
     plt.gca().xaxis.set_major_formatter(yrs_formatter);
     plt.ylabel("Baseline (m)");
-    plt.title("Network Geometry");
+    plt.title("Network Geometry - Inclusive");
     plt.savefig(plotname);
     plt.close();
     print("finished printing network plot");
     return;
+
+
+
+#
+# table = read_baseline_table('Metadata/baseline_table.dat')
+# intf = read_intf_table('Metadata/intf_record.in')
+# included_intf = remove_manual_excludes(intf, 'Metadata/manual_remove.txt', 0 );
+# print(len(included_intf))
+#
+# make_network_plot(included_intf, table[0], table[1], table[2], 'Network Geometry - 0 images removed')
