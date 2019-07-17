@@ -1,8 +1,9 @@
-import matplotlib.pyplot as plt 
+#!/usr/bin/python
+import matplotlib.pyplot as plt
 import numpy as np
 import glob as glob
 import sys
-import datetime as dt 
+import datetime as dt
 import subprocess
 import netcdf_read_write
 
@@ -14,37 +15,37 @@ def top_level_driver(skip_file=[]):
 	return;
 
 
-# ------------- CONFIGURE ------------ # 
+# ------------- CONFIGURE ------------ #
 def configure():
-	file_dir="intf_all";
+	file_dir="intf_all_remote";
 	file_type="phasefilt.grd";
-	outdir='phasefilt/'
+	outdir='phasefilt_rmtopo/'
 
 	subprocess.call(['mkdir','-p',outdir],shell=False);
-	
+
 	file_names=glob.glob(file_dir+"/*/"+file_type);
 	if len(file_names)==0:
 		print("Error! No files matching search pattern."); sys.exit(1);
 	print("Reading "+str(len(file_names))+" files.");
-	num_plots_x=4; num_plots_y=3; 
+	num_plots_x=4; num_plots_y=3;
 	return [file_names, outdir, num_plots_x, num_plots_y];
 
 
-# ------------- INPUTS ------------ # 
+# ------------- INPUTS ------------ #
 def inputs(file_names, skip_file):
 	try:
-		[xdata,ydata] = netcdf_read_write.read_grd_xy(file_names[0]);  # can read either netcdf3 or netcdf4. 
+		[xdata,ydata] = netcdf_read_write.read_grd_xy(file_names[0]);  # can read either netcdf3 or netcdf4.
 	except TypeError:
 		[xdata,ydata] = netcdf_read_write.read_netcdf4_xy(file_names[0]);
 	data_all=[];
 	date_pairs=[];
 
-	file_names=sorted(file_names); # To force into date-ascending order. 
-	
+	file_names=sorted(file_names); # To force into date-ascending order.
+
 	for ifile in file_names:  # Read the data
 		try:
 			data = netcdf_read_write.read_grd(ifile);
-		except TypeError: 
+		except TypeError:
 			data = netcdf_read_write.read_netcdf4(ifile);
 		data_all.append(data);
 		pairname=ifile.split('/')[-2][0:15];
@@ -69,14 +70,14 @@ def make_plots(xdata,ydata,data_all,date_pairs,outdir, num_plots_x, num_plots_y,
 
 			fignum=i/(num_plots_y*num_plots_x); # counting figures up 0 to 1 to 2....
 
-			# Looping forward and plotting the next 12 plots... 
+			# Looping forward and plotting the next 12 plots...
 			f,axarr = plt.subplots(num_plots_y, num_plots_x,figsize=(10,10));
 			for k in range(num_plots_y):
 				for m in range(num_plots_x):
 					if count==len(data_all):
 						break;
 
-					# How many days separate this interferogram? 
+					# How many days separate this interferogram?
 					day1=date_pairs[count].split('_')[0];
 					day2=date_pairs[count].split('_')[1];
 					if day1[4:7]=="000":
@@ -107,4 +108,3 @@ def make_plots(xdata,ydata,data_all,date_pairs,outdir, num_plots_x, num_plots_y,
 
 if __name__=="__main__":
 	top_level_driver();
-

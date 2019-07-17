@@ -159,7 +159,6 @@ def produce_output_plot(netcdfname, plottitle, filename, cblabel):
 	fig = plt.figure(figsize=(7,10));
 	ax1 = fig.add_axes([0.0, 0.1, 0.9, 0.8]);
 	plt.imshow(zread_copy,aspect=1.2);
-	plt.gca().invert_yaxis()
 	plt.gca().invert_xaxis()
 	plt.gca().get_xaxis().set_ticks([]);
 	plt.gca().get_yaxis().set_ticks([]);
