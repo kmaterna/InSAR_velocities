@@ -13,7 +13,7 @@ def phase_ref(mytuple, yvalue, xvalue):
         ref_values.append(store[f, yvalue, xvalue])
 
     print(len(ref_values))
-    
+
     i,j,f = 0,0,0
     while f < len(mytuple.zvalues):
             store[f, i ,j] = store[f, i ,j] - ref_values[f]

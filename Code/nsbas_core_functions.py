@@ -15,19 +15,21 @@ import sys
 
 def configure():
 	myfiles_phase = glob.glob("intf_all_remote/???????_???????/unwrap_ref.grd")
+	myfiles_no_ramp = glob.glob("intf_all_remote/???????_???????/unwrap_ref_corrected.grd")
 	manual_remove="Metadata/manual_remove.txt";
 	wavelength=56; # mm
 	nsbas_good_num=50; # % of images above coherence threshold
 	wls_flag = 1
-	smoothing=20;
-	outfile="NSBASweighted_reasonable_smooth20_thresh50.grd"
-	signal_spread_file="Stacking/signalspread.nc"
-	return wls_flag, myfiles_phase, manual_remove, signal_spread_file, wavelength, nsbas_good_num, smoothing, outfile;
+	remove_ramp_flag = 0
+	smoothing=0.05;
+	outfile='Stacking/NSBAS/Ionosphere_corrected/Experimental_Smooth/velocity_NSBAS_reasonable_smooth4.grd'
+	signal_spread_file="signalspread_please_test.nc"
+	return myfiles_no_ramp, remove_ramp_flag, wls_flag, myfiles_phase, manual_remove, signal_spread_file, wavelength, nsbas_good_num, smoothing, outfile;
 
 
 # ------------ INPUTS ------------ #
-def inputs(myfiles_phase, signal_spread_file, manual_remove, number_of_excluded_images, wls_flag=0):
-	signal_spread_data=rwr.read_grd(signal_spread_file);  # HELP! Somehow read this into an array. - done
+def inputs(myfiles_no_ramp, remove_ramp_flag, myfiles_phase, signal_spread_file, manual_remove, number_of_excluded_images, wls_flag=0):
+	signal_spread_data=rwr.read_grd(signal_spread_file);
 	f = open(manual_remove, 'r')
 	raw, content = f.readlines()[0:number_of_excluded_images], []
 	for i in range(len(raw)):
@@ -36,11 +38,25 @@ def inputs(myfiles_phase, signal_spread_file, manual_remove, number_of_excluded_
 	for i in range(len(myfiles_phase)):
 		if myfiles_phase[i][16:31] not in content:
 			filesmodified.append(myfiles_phase[i])
-	print(len(filesmodified))
-	# HELP! SOMEHOW EXCLUDE SOME FILES. NOT SURE YOUR INPUT FORMAT.
-	datatuple=rmd.reader(filesmodified);
+	if remove_ramp_flag != 0:
+		f = open("Metadata/Ramp_need_fix.txt", 'r')
+		raw, content = f.readlines()[:], []
+		for i in range(len(raw)):
+		    content.append(raw[i].strip('\n'))
+		myfiles_new = []
+		for i in range(len(filesmodified)):
+			test = filesmodified[i].replace("ref", "ref_corrected")
+			if test in myfiles_no_ramp:
+				myfiles_new.append(test)
+			if filesmodified[i][16:31] not in content:
+				myfiles_new.append(filesmodified[i])
+		print(len(myfiles_new))
+		datatuple=rmd.reader(myfiles_new);
+	if remove_ramp_flag == 0:
+		print(len(filesmodified))
+		datatuple=rmd.reader(filesmodified);
 	if wls_flag == 1:
-		filesmodified_coherence = [x.replace("unwrap_ref.grd", "corr.grd") for x in filesmodified]
+		filesmodified_coherence = [x.replace(x[32:], "corr.grd") for x in filesmodified]
 		coherence_cube = rmd.reader(filesmodified_coherence)
 		coherence_cube = coherence_cube.zvalues
 	else:
@@ -205,74 +221,84 @@ def overlay_gps(netcdfname, smoothing, misfit):
 	ma = np.nanmax(z, axis=None, out=None)
 	mi = np.nanmin(z, axis=None, out=None)
 
-	fr = netcdf.netcdf_file(netcdfname,'r');
-	xread=fr.variables['x'];
-	yread=fr.variables['y'];
-	yread = yread[:].copy();
-	yread = yread[::-1];
-	zread=fr.variables['z'];
-	zread_copy=zread[:][:].copy();
+	xread, yread, zread = rwr.read_grd_xyz(netcdfname)
 
 	# Make a plot
 	fig = plt.figure(figsize=(7,10));
 	ax1 = fig.add_axes([0.0, 0.1, 0.9, 0.8]);
-	image = plt.imshow(zread_copy,aspect=1.2,extent=[15.984871407, 21116.0151286,12196 , 4.4408920985*(10**-16) ],cmap='rainbow');
+	image = plt.imshow(zread,aspect=1.2,extent=[15.984871407, 21116.0151286,12196 , 4.4408920985*(10**-16) ],cmap='jet', vmin=-10, vmax=10);
 	plt.gca().invert_xaxis()
 	# plt.gca().invert_yaxis()
-	plt.title('Reasonable NSBAS weighted - smoothing factor: ' + str(smoothing) + ', Misfit: ' + str(misfit));
+	plt.title('Reasonable Weighted NSBAS with ramps - smoothing factor: ' + str(smoothing) + ' -  Misfit: '+ str(misfit));
 	plt.gca().set_xlabel("Range",fontsize=16);
 	plt.gca().set_ylabel("Azimuth",fontsize=16);
-	scatter = plt.gca().scatter(xfinal, yfinal , c=velfinal,marker='v', s=100, cmap='rainbow', vmin=mi, vmax=ma)
+	scatter = plt.gca().scatter(xfinal, yfinal , c=velfinal, marker='v', s=100, cmap='jet', vmin=-10, vmax=10)
 	cb = plt.colorbar(image);
 	cb.set_label('velocity in mm/yr', size=16);
 	plt.show()
 	return
 
 if __name__=="__main__":
-	wls_flag, myfiles_phase, manual_remove, signal_spread_file, wavelength, nsbas_good_num, smoothing, outfile = configure();
-	datatuple, signal_spread_data, dates, date_pairs, coherence_cube = inputs(myfiles_phase, signal_spread_file, manual_remove, 15, wls_flag);
-	vel = compute(coherence_cube, datatuple, nsbas_good_num, signal_spread_data, dates, date_pairs, smoothing, wavelength, outfile, wls_flag);
-	rwr.produce_output_netcdf(datatuple.xvalues, datatuple.yvalues, vel, 'velocity',outfile);
-	rwr.flip_if_necessary(outfile);
-	rwr.produce_output_plot(outfile, 'Reasonable NSBAS weighted - smoothing factor: 20', 'NSBASweighted_reasonable_smooth20_thresh50.png', 'velocity in mm/yr')
-
-	f = open('Metadata/gps_ra_los.xyz', 'r')
-	raw = f.read()
-	content = raw.split('\n')
-	content.pop()
-	for i in range(len(content)):
-		content[i] = content[i].split(" ", 2)
-
-	x, y , vel = [], [], []
-	for i in range(len(content)):
-		x.append(float(content[i][0]))
-		y.append(float(content[i][1]))
-		vel.append(float(content[i][2]))
-
-	r = len(x)
-	print(len(x))
-	print(len(y))
-	print(len(vel))
-
-	xfinal, yfinal, velfinal = [], [], []
-
-	for i in range(r):
-		if x[i] > 15.984871407 and x[i] < 21116.0151286 and y[i] > 4.4408920985*(10**-16) and y[i] < 12196:
-			xfinal.append(x[i])
-			yfinal.append(y[i])
-			velfinal.append(vel[i])
-
-	print(xfinal)
-	print(yfinal)
-	print(velfinal)
-
-	xratio, yratio = (21116.0151286-15.984871407)/661 , 7.9973770491803275
-	xfinal_ratioed, yfinal_ratioed = [int(round(i/xratio)) for i in xfinal], [int(round(i/yratio)) for i in yfinal]
-
-	grdfile = outfile
-
-	est = estimated_gpsvel(grdfile)
-	misfit = misfit(velfinal, est )
+	myfiles_no_ramp, remove_ramp_flag, wls_flag, myfiles_phase, manual_remove, signal_spread_file, wavelength, nsbas_good_num, smoothing, outfile = configure();
+	# datatuple, signal_spread_data, dates, date_pairs, coherence_cube = inputs(myfiles_no_ramp, remove_ramp_flag, myfiles_phase, signal_spread_file, manual_remove, 15, wls_flag);
+	# vel = compute(coherence_cube, datatuple, nsbas_good_num, signal_spread_data, dates, date_pairs, smoothing, wavelength, outfile, wls_flag);
+	# rwr.produce_output_netcdf(datatuple.xvalues, datatuple.yvalues, vel, 'velocity',outfile);
+	# rwr.flip_if_necessary(outfile);
+	# rwr.produce_output_plot(outfile, 'Weighted Reasonable NSBAS - smoothing factor: ' + str(smoothing), 'Stacking/NSBAS/velocity_weighted50NSBAS_reasonable_smoothlowest.png', 'velocity in mm/yr')
+	
+	# x,y,vel = rwr.read_grd_xyz(outfile)
+	# signal = rwr.read_grd(signal_spread_file)
+	# updated_vel = np.zeros((np.shape(vel)))
+	# i, j,c  = 0, 0, 0
+	# for v in np.nditer(vel):
+	# 	print(c)
+	# 	if signal[i,j] < 65 and signal[i,j] > 50:
+	# 		updated_vel[i,j] = np.nan
+	# 	else:
+	# 		updated_vel[i,j] = vel[i,j]
+	# 	j+=1
+	# 	c+=1
+	# 	if j==len(x):
+	# 		j=0
+	# 		i+=1
+	# 		if i == len(y):
+	# 			i=0
 
 
-	overlay_gps(grdfile, 20, misfit )
+	# f = open('Metadata/gps_ra_los.xyz', 'r')
+	# raw = f.read()
+	# content = raw.split('\n')
+	# content.pop()
+	# for i in range(len(content)):
+	# 	content[i] = content[i].split(" ", 2)
+	#
+	# x, y , vel = [], [], []
+	# for i in range(len(content)):
+	# 	x.append(float(content[i][0]))
+	# 	y.append(float(content[i][1]))
+	# 	vel.append(float(content[i][2]))
+	#
+	# r = len(x)
+	# print(len(x))
+	# print(len(y))
+	# print(len(vel))
+	#
+	# xfinal, yfinal, velfinal = [], [], []
+	#
+	# for i in range(r):
+	# 	if x[i] > 15.984871407 and x[i] < 21116.0151286 and y[i] > 4.4408920985*(10**-16) and y[i] < 12196:
+	# 		xfinal.append(x[i])
+	# 		yfinal.append(y[i])
+	# 		velfinal.append(vel[i])
+	#
+	#
+	# xratio, yratio = (21116.0151286-15.984871407)/661 , 7.9973770491803275
+	# xfinal_ratioed, yfinal_ratioed = [int(round(i/xratio)) for i in xfinal], [int(round(i/yratio)) for i in yfinal]
+	#
+	# grdfile = outfile
+	#
+	# est = estimated_gpsvel(grdfile)
+	# misfit = misfit(velfinal, est )
+	#
+	#
+	# overlay_gps(grdfile, smoothing, misfit )

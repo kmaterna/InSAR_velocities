@@ -29,13 +29,13 @@ def stack_corr(mytuple, cutoff):
             i+=1
             if i == len(mytuple.yvalues):
                 i=0
-        return a
+    return a
 
 
 if __name__ == "__main__":
     myfiles = glob.glob("intf_all_remote/???????_???????/corr.grd")
     mytuple=rmd.reader(myfiles)
     a=stack_corr(mytuple, 0.1)
-    rwr.produce_output_netcdf(mytuple.xvalues, mytuple.yvalues, a, 'Percentage', 'signalspread.nc')
-    rwr.flip_if_necessary('signalspread.nc')
-    rwr.produce_output_plot('signalspread.nc', 'Signal Spread', 'signalspread.png', 'Percentage of coherence (out of 288 images)' )
+    rwr.produce_output_netcdf(mytuple.xvalues, mytuple.yvalues, a, 'Percentage', 'signalspread_please_test.nc')
+    rwr.flip_if_necessary('signalspread_please_test.nc')
+    rwr.produce_output_plot('signalspread_please_test.nc', 'Signal Spread', 'signalspread_please_test.png', 'Percentage of coherence (out of 288 images)' )
