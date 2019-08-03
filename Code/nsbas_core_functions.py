@@ -21,8 +21,8 @@ def configure():
 	nsbas_good_num=50; # % of images above coherence threshold
 	wls_flag = 1
 	remove_ramp_flag = 0
-	smoothing=0.05;
-	outfile='Stacking/NSBAS/Ionosphere_corrected/Experimental_Smooth/velocity_NSBAS_reasonable_smooth4.grd'
+	smoothing=1;
+	outfile="Stacking/NSBAS/velocity_weighted50NSBAS_reasonable_smooth1.grd"
 	signal_spread_file="signalspread_please_test.nc"
 	return myfiles_no_ramp, remove_ramp_flag, wls_flag, myfiles_phase, manual_remove, signal_spread_file, wavelength, nsbas_good_num, smoothing, outfile;
 
@@ -229,7 +229,7 @@ def overlay_gps(netcdfname, smoothing, misfit):
 	image = plt.imshow(zread,aspect=1.2,extent=[15.984871407, 21116.0151286,12196 , 4.4408920985*(10**-16) ],cmap='jet', vmin=-10, vmax=10);
 	plt.gca().invert_xaxis()
 	# plt.gca().invert_yaxis()
-	plt.title('Reasonable Weighted NSBAS with ramps - smoothing factor: ' + str(smoothing) + ' -  Misfit: '+ str(misfit));
+	plt.title('Reasonable WNSBAS without ramps - smoothing factor: ' + str(smoothing) + ' -  Misfit: '+ str(misfit));
 	plt.gca().set_xlabel("Range",fontsize=16);
 	plt.gca().set_ylabel("Azimuth",fontsize=16);
 	scatter = plt.gca().scatter(xfinal, yfinal , c=velfinal, marker='v', s=100, cmap='jet', vmin=-10, vmax=10)
@@ -240,12 +240,12 @@ def overlay_gps(netcdfname, smoothing, misfit):
 
 if __name__=="__main__":
 	myfiles_no_ramp, remove_ramp_flag, wls_flag, myfiles_phase, manual_remove, signal_spread_file, wavelength, nsbas_good_num, smoothing, outfile = configure();
-	# datatuple, signal_spread_data, dates, date_pairs, coherence_cube = inputs(myfiles_no_ramp, remove_ramp_flag, myfiles_phase, signal_spread_file, manual_remove, 15, wls_flag);
-	# vel = compute(coherence_cube, datatuple, nsbas_good_num, signal_spread_data, dates, date_pairs, smoothing, wavelength, outfile, wls_flag);
-	# rwr.produce_output_netcdf(datatuple.xvalues, datatuple.yvalues, vel, 'velocity',outfile);
-	# rwr.flip_if_necessary(outfile);
-	# rwr.produce_output_plot(outfile, 'Weighted Reasonable NSBAS - smoothing factor: ' + str(smoothing), 'Stacking/NSBAS/velocity_weighted50NSBAS_reasonable_smoothlowest.png', 'velocity in mm/yr')
-	
+	datatuple, signal_spread_data, dates, date_pairs, coherence_cube = inputs(myfiles_no_ramp, remove_ramp_flag, myfiles_phase, signal_spread_file, manual_remove, 15, wls_flag);
+	vel = compute(coherence_cube, datatuple, nsbas_good_num, signal_spread_data, dates, date_pairs, smoothing, wavelength, outfile, wls_flag);
+	rwr.produce_output_netcdf(datatuple.xvalues, datatuple.yvalues, vel, 'velocity',outfile);
+	rwr.flip_if_necessary(outfile);
+	rwr.produce_output_plot(outfile, 'Reasonable WNSBAS - smoothing factor: ' + str(smoothing), "Stacking/NSBAS/velocity_weighted50NSBAS_reasonable_smooth1.png", 'velocity in mm/yr')
+
 	# x,y,vel = rwr.read_grd_xyz(outfile)
 	# signal = rwr.read_grd(signal_spread_file)
 	# updated_vel = np.zeros((np.shape(vel)))
@@ -263,9 +263,27 @@ if __name__=="__main__":
 	# 		i+=1
 	# 		if i == len(y):
 	# 			i=0
+	# rwr.produce_output_netcdf(x, y, updated_vel, 'velocity',outfile);
+	# rwr.flip_if_necessary(outfile);
+	# rwr.produce_output_plot(outfile, 'Reasonable NSBAS - smoothing factor: ' + str(smoothing), "Stacking/NSBAS/velocity_weighted50NSBAS_reasonable_smooth1.png", 'velocity in mm/yr')
 
 
-	# f = open('Metadata/gps_ra_los.xyz', 'r')
+	# vel1=rwr.read_grd(outfile)
+	# sig=rwr.read_grd(signal_spread_file)
+	# i,j, test = 0,0, []
+	# for v in np.nditer(vel1):
+	# 	if np.isnan(v) == False:
+	# 		test.append(sig[i,j])
+	# 	j+=1
+	# 	if j== np.shape(vel1)[1]:
+	# 		j=0
+	# 		i+=1
+	# 		if i == np.shape(vel1)[0]:
+	# 			i=0
+	# print(np.nanmin(test))
+	#
+	#
+	# f = open('Metadata/gps_ra_los_2D.xyz', 'r')
 	# raw = f.read()
 	# content = raw.split('\n')
 	# content.pop()
